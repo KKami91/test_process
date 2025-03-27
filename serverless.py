@@ -391,7 +391,7 @@ def latentsync(output_prefix, vast_instance_url, vast_instance_port, mode_):
             print(f"API Error: {response.status_code}. {response.text}")
 
 # Audio - Background Sound Split & loud Background Sound
-def split_video_to_bg(split_audio_file, bg_model, device_, bg_dir, cnt):
+def split_video_to_bg(output_prefix, split_audio_file, bg_model, device_, bg_dir, cnt):
     """
         split_audio_file: split했던 원본 Audio파일
         bg_model: htdemucs model
@@ -495,7 +495,7 @@ def demucs_runpod_serverless(audio_file, api_key, endpoint_id, output_prefix, cn
         
         time.sleep(3)
 
-def group_combined_segment(divide_text, output_prefix):
+def group_combined_segment(divide_text, output_prefix, origin_video):
     """
         divide_text: 각 segment(dict)로 이루어진 list
     """
@@ -758,7 +758,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     
     # TTS Combined with group
     logger.info("음성 파일 병합 시작")
-    group_combined_segment(divide_text, output_prefix)
+    group_combined_segment(divide_text, output_prefix, origin_video)
     logger.info("음성 파일 병합 완료")
     
     # Background Sound Split
@@ -772,7 +772,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
         bg_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         for audio_idx, audio_file in enumerate(glob.glob(os.path.join(output_prefix, f"{origin_video[:-4]}_*.mp3"))):
             logger.info(f"로컬 GPU로 오디오 파일 {audio_idx} 처리 중...")
-            split_video_to_bg(audio_file, bg_model, bg_device, bg_dir, audio_idx)
+            split_video_to_bg(output_prefix, audio_file, bg_model, bg_device, bg_dir, audio_idx)
     else:
         # 별도의 Demucs RunPod 엔드포인트가 제공된 경우
         if demucs_endpoint_id:
