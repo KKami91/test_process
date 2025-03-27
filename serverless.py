@@ -18,6 +18,9 @@ from pydub import AudioSegment
 import runpod
 import numpy as np
 from dotenv import load_dotenv
+from runpod import RunPodLogger
+
+log = RunPodLogger()
 
 load_dotenv()
 RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY")
@@ -97,6 +100,11 @@ def segment_split_video(origin_video, video_file: str, output_prefix, stt_segmen
         stt_segment: STT 결과값,
         max_segment_duration: 자를 최대 시간
     """
+    log.info("비디오 분할 시작 함수")
+    log.info(f"origin_video: {origin_video}")
+    log.info(f"video_file: {video_file}")
+    log.info(f"output_prefix: {output_prefix}")
+
     os.makedirs(output_prefix, exist_ok=True) # 자른 파일들 저장될 디렉토리
 
     grouped_segments = []
@@ -634,7 +642,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
         최종 비디오 파일 경로 및 처리 로그
     """
     logs = []
-    logs.append("더빙 프로세스 시작")
+    log.info("더빙 프로세스 시작")
     
     # 원본 파일명 설정
     origin_video = os.path.basename(video_file)
@@ -644,7 +652,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     os.chdir(work_dir)
     
     # 영상 자체를 25frame으로 강제 변환
-    logs.append("25fps 변환 시작")
+    log.info("25fps 변환 시작")
     fps25_cmd = [
         "ffmpeg",
         "-i", origin_video,
@@ -658,39 +666,39 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     output_prefix = origin_video.split(".")[0] + "_output"
     
     # STT하기 위한 오디오 파일 생성
-    logs.append("오디오 추출 시작")
+    log.info("오디오 추출 시작")
     video_ = VideoFileClip(origin_video)
     audio_filename = origin_video.split(".")[0] + ".mp3"
     video_.audio.write_audiofile(audio_filename)
     audio_base64 = file_to_base64(audio_filename)
     
     # Faster whisper (STT)
-    logs.append("STT 시작")
+    log.info("STT 시작")
     stt_result = stt_faster_whisper(audio_base64, RUNPOD_API_KEY, STT_ENDPOINT)
-    logs.append("STT 완료")
+    log.info("STT 완료")
     
     # Segment split Video
-    logs.append("비디오 분할 시작")
+    log.info("비디오 분할 시작")
     segments_list = segment_split_video(origin_video, video_file, output_prefix, stt_result["segments"], 20)
-    logs.append("비디오 분할 완료")
+    log.info("비디오 분할 완료")
     
     # Split video to audio
-    logs.append("분할된 비디오에서 오디오 추출 시작")
+    log.info("분할된 비디오에서 오디오 추출 시작")
     split_video_to_audio(output_prefix)
-    logs.append("분할된 비디오에서 오디오 추출 완료")
+    log.info("분할된 비디오에서 오디오 추출 완료")
     
     # OpenAI translation
-    logs.append(f"{language[target_language]}로 번역 시작")
+    log.info(f"{language[target_language]}로 번역 시작")
     translation_result = translate(language[target_language], stt_result["segments"], OPENAI_API_KEY)
-    logs.append("번역 완료")
+    log.info("번역 완료")
     
     # Split text 
-    logs.append("텍스트 분할 시작")
+    log.info("텍스트 분할 시작")
     divide_text = extract_text_by_segments(translation_result, segments_list)
-    logs.append("텍스트 분할 완료")
+    log.info("텍스트 분할 완료")
     
     # Zonos (TTS)
-    logs.append("TTS 시작")
+    log.info("TTS 시작")
     reference_audio = origin_video.split(".")[0] + ".mp3"
     cmd = [
         'ffmpeg', 
@@ -702,7 +710,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     
     for i in range(len(divide_text)):
         for j in range(len(divide_text[i])):
-            logs.append(f"TTS 처리 중: 세그먼트 {i}, 문장 {j}")
+            log.info(f"TTS 처리 중: 세그먼트 {i}, 문장 {j}")
             result = tts_zonos(
                 model_type="transformer",
                 endpoint_id=STT_ENDPOINT,
@@ -730,12 +738,12 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
             if result and "audio" in result:
                 base64_to_file(result["audio"], f"{output_prefix}/convert_{origin_video.split('.')[0]}_{i}_{j}.mp3")
             else:
-                logs.append(f"TTS 저장 실패: 세그먼트 {i}, 문장 {j}")
+                log.info(f"TTS 저장 실패: 세그먼트 {i}, 문장 {j}")
     
-    logs.append("TTS 완료")
+    log.info("TTS 완료")
     
     # 음성 파일 볼륨 조절
-    logs.append("음성 파일 볼륨 정규화 시작")
+    log.info("음성 파일 볼륨 정규화 시작")
     for i in glob.glob(f"./{output_prefix}/convert*.mp3"):
         cmd = [
             "ffmpeg",
@@ -746,15 +754,15 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
         subprocess.run(cmd)
         i = os.path.normpath(i)
         os.remove(i)
-    logs.append("음성 파일 볼륨 정규화 완료")
+    log.info("음성 파일 볼륨 정규화 완료")
     
     # TTS Combined with group
-    logs.append("음성 파일 병합 시작")
+    log.info("음성 파일 병합 시작")
     group_combined_segment(divide_text, output_prefix)
-    logs.append("음성 파일 병합 완료")
+    log.info("음성 파일 병합 완료")
     
     # Background Sound Split
-    logs.append("배경 사운드 분리 시작")
+    log.info("배경 사운드 분리 시작")
     os.makedirs(f"{output_prefix}/bg_temp", exist_ok=True)
     bg_dir = os.path.join(output_prefix, "bg_temp")
     
@@ -763,27 +771,27 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
         bg_model = get_model("htdemucs")
         bg_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         for audio_idx, audio_file in enumerate(glob.glob(os.path.join(output_prefix, f"{origin_video[:-4]}_*.mp3"))):
-            logs.append(f"로컬 GPU로 오디오 파일 {audio_idx} 처리 중...")
+            log.info(f"로컬 GPU로 오디오 파일 {audio_idx} 처리 중...")
             split_video_to_bg(audio_file, bg_model, bg_device, bg_dir, audio_idx)
     else:
         # 별도의 Demucs RunPod 엔드포인트가 제공된 경우
         if demucs_endpoint_id:
             for audio_idx, audio_file in enumerate(glob.glob(os.path.join(output_prefix, f"{origin_video[:-4]}_*.mp3"))):
-                logs.append(f"별도 RunPod Serverless GPU로 오디오 파일 {audio_idx} 처리 중...")
+                log.info(f"별도 RunPod Serverless GPU로 오디오 파일 {audio_idx} 처리 중...")
                 demucs_runpod_serverless(audio_file, RUNPOD_API_KEY, demucs_endpoint_id, output_prefix, audio_idx)
         else:
             # 별도 엔드포인트가 없는 경우 로컬 CPU로 처리
-            logs.append("별도 Demucs 엔드포인트가 없어 로컬 CPU로 처리합니다 (느릴 수 있음)")
+            log.info("별도 Demucs 엔드포인트가 없어 로컬 CPU로 처리합니다 (느릴 수 있음)")
             bg_model = get_model("htdemucs")
             bg_device = 'cpu'
             for audio_idx, audio_file in enumerate(glob.glob(os.path.join(output_prefix, f"{origin_video[:-4]}_*.mp3"))):
-                logs.append(f"로컬 CPU로 오디오 파일 {audio_idx} 처리 중...")
+                log.info(f"로컬 CPU로 오디오 파일 {audio_idx} 처리 중...")
                 split_video_to_bg(audio_file, bg_model, bg_device, bg_dir, audio_idx)
     
-    logs.append("배경 사운드 분리 완료")
+    log.info("배경 사운드 분리 완료")
     
     # 음성과 배경 사운드 혼합
-    logs.append("음성과 배경 사운드 혼합 시작")
+    log.info("음성과 배경 사운드 혼합 시작")
     voice_ = glob.glob(os.path.join(output_prefix, "res_convert_*.mp3"))
     bg_ = glob.glob(os.path.join(output_prefix, "bg*_loud.mp3"))
     for i in range(len(voice_)):
@@ -791,21 +799,21 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
         temp_bg = AudioSegment.from_file(bg_[i])
         combined = temp_voice.overlay(temp_bg)
         combined.export(f"{output_prefix}/combined_{i}.mp3", format="mp3")
-    logs.append("음성과 배경 사운드 혼합 완료")
+    log.info("음성과 배경 사운드 혼합 완료")
     
     # LatentSync
-    logs.append("립싱크 시작")
+    log.info("립싱크 시작")
     VAST_URL = "185.254.254.238"
     VAST_PORT = "54128"
     latentsync(output_prefix, VAST_URL, VAST_PORT, "pingpong")
-    logs.append("립싱크 완료")
+    log.info("립싱크 완료")
     
     # Merge Convert Video
-    logs.append("최종 비디오 병합 시작")
+    log.info("최종 비디오 병합 시작")
     INPUT_DIR = output_prefix + "/latentsync"
     OUTPUT_DIR = INPUT_DIR + "/final.mp4"
     merge_mp4_files(INPUT_DIR, OUTPUT_DIR)
-    logs.append("최종 비디오 병합 완료")
+    log.info("최종 비디오 병합 완료")
     
     # 최종 비디오 파일을 base64로 변환
     final_video_base64 = file_to_base64(OUTPUT_DIR)
