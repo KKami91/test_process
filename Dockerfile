@@ -40,10 +40,11 @@ WORKDIR /app
 
 # 애플리케이션 파일 복사
 COPY serverless.py /app/
-COPY runpod_handler.py /app/
+# COPY runpod_handler.py /app/
 
 # 필요한 경우 모델 사전 다운로드
 RUN python3 -c "from demucs.pretrained import get_model; get_model('htdemucs')"
 
 # 실행 명령
-CMD ["python", "-u", "runpod_handler.py"] 
+#CMD ["python", "-u", "runpod_handler.py"] 
+CMD ["python", "-u", "serverless.py"]
