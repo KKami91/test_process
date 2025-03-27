@@ -18,9 +18,9 @@ from pydub import AudioSegment
 import runpod
 from dotenv import load_dotenv
 import logging
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY")
@@ -41,6 +41,7 @@ def file_to_base64(file: str):
 # format base64 to file:
 def base64_to_file(base64_data, output_file):
     data = base64.b64decode(base64_data)
+    print('base64_to_file', output_file)
     with open(output_file, "wb") as file:
         file.write(data)
 
@@ -352,7 +353,7 @@ def latentsync(output_prefix, vast_instance_url, vast_instance_port, mode_):
             - loop_to_audio: Audio가 길 경우 비디오 처음부터 다시 재생하여 길이를 맞춤
     """
     video_files = glob.glob(f"./{output_prefix}/*.mp4")
-    convert_audio_files = glob.glob(f"./{output_prefix}/convert_*_loud.mp3")
+    convert_audio_files = glob.glob(f"./{output_prefix}/combined_*.mp3")
 
     for i in range(len(video_files)):
         video_cap = cv2.VideoCapture(video_files[i])
@@ -833,11 +834,15 @@ def handler(event):
     Returns:
         처리 결과 객체
     """
+
+
+    logger.info("RunPod Serverless 핸들러 함수 시작")
     try:
         job_input = event["input"]
         
         # 임시 작업 디렉토리 생성
         temp_dir = "/tmp/dubbing_job"
+        #temp_dir = os.path.join(os.getcwd(), "dubbing_job")
         os.makedirs(temp_dir, exist_ok=True)
         os.chdir(temp_dir)
         
@@ -892,4 +897,3 @@ def handler(event):
 
 # RunPod 서버리스 API에 핸들러 등록
 runpod.serverless.start({"handler": handler})
-
