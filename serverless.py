@@ -671,7 +671,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     
     # Segment split Video
     logs.append("비디오 분할 시작")
-    segments_list = segment_split_video(origin_video, output_prefix, stt_result["segments"], 20)
+    segments_list = segment_split_video(origin_video, video_file, output_prefix, stt_result["segments"], 20)
     logs.append("비디오 분할 완료")
     
     # Split video to audio
