@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logging = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY")
