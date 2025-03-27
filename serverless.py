@@ -713,7 +713,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
             logger.info(f"TTS 처리 중: 세그먼트 {i}, 문장 {j}")
             result = tts_zonos(
                 model_type="transformer",
-                endpoint_id=STT_ENDPOINT,
+                endpoint_id=TTS_ENDPOINT,
                 api_key=RUNPOD_API_KEY,
                 language=target_language,
                 text=divide_text[i][j]['text'],
