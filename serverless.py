@@ -750,8 +750,8 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     
     # LatentSync
     logger.info("립싱크 시작")
-    VAST_URL = "185.254.254.238"
-    VAST_PORT = "54128"
+    VAST_URL = vast_instance_url
+    VAST_PORT = vast_instance_port
     latentsync(output_prefix, VAST_URL, VAST_PORT, "pingpong")
     logger.info("립싱크 완료")
     
