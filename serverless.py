@@ -21,7 +21,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 load_dotenv()
 RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -504,12 +503,9 @@ def group_combined_segment(divide_text, output_prefix, origin_video):
     silence_duration = 0
     for group_idx, group in enumerate(divide_text):
         result_audio = AudioSegment.silent(duration=0)
-        current_position = 0
-        temp_silence_length = []
         for segment_idx, segment in enumerate(group):
             original_start = segment['start'] * 1000
             original_end = segment['end'] * 1000
-            silence_flag = 0
             audio_path = os.path.join(output_prefix, f"convert_{origin_video[:-4]}_{group_idx}_{segment_idx}_loud.mp3")
 
             if os.path.exists(audio_path):
@@ -517,7 +513,6 @@ def group_combined_segment(divide_text, output_prefix, origin_video):
                 actual_duration = len(audio)
                 original_duration = original_end - original_start
 
-                # 만약 group, segment idx가 모두 0이, 0.98 이라면...
                 if segment_idx == 0:
                     current_position = original_start
                 else:
@@ -526,16 +521,11 @@ def group_combined_segment(divide_text, output_prefix, origin_video):
                         result_audio = result_audio + AudioSegment.silent(duration=silence_duration)
                         current_position += silence_duration
                 
-
                 if group_idx == 0 and segment_idx == 0:
                     if original_start != 0:
-                        # temp_silence_length -> [0.98]
-                        # temp_silence_length.append(np.round(original_start, 3))
                         result_audio = result_audio + AudioSegment.silent(duration=original_start) + audio
-                        # silence_flag = 1 ?
                     else:
                         result_audio = result_audio + audio
-                        # silence_flag = 0 ?
                 else:
                     if original_duration > actual_duration:
                         result_audio = result_audio + audio + AudioSegment.silent(duration=original_duration - actual_duration)
@@ -552,50 +542,6 @@ def group_combined_segment(divide_text, output_prefix, origin_video):
 
         convert_output_path = os.path.join(output_prefix, f"res_convert_{group_idx}.mp3")
         result_audio.export(convert_output_path, format="mp3")
-
-                # 0.98 ~ 4.58 (3.6) / 7.04 ~ 10.96 (3.92) / 12.08 ~ 19.5 (7.42) -> 만약 Actual_duration 4.8 / 6.5 / 3.2
-                # group_idx 0 , segment_idx 0 
-                # group for문 : original_start 980 / original_end 4580 
-                # -> segment for문 : actual_duration 4800, original_duration 3600, 
-                # --> if segment_idx == 0: -> current_position 980
-                # --> if group_idx, segment_idx == 0: -> original_start != 0: -> result_audio = result_audio(0) + AudioSegment.silent(980) + 4.8초 오디오
-                # silence_duration 0, current_position 4800, previous_end 4800
-
-                # group_idx 0, segment_idx 1
-                # group for문 : original_start 7040, original_end 10960
-                # -> segment for문 : actual_duration 6500, original_duration 3920
-                # --> else: if original_start(7040) > previous_end(4800): silence_duration (7040-4800 -> 2240), result_audio = 980 + 4800 + AudioSegment.silent(2240) + 6.5초 오디오, current_position (2800+4240 -> 7040)
-                # --> else: 3920 > 6500 (X)
-                # silence_duration = 0, current_position 7040+6500 = 13540, previous_end = 13540
-
-                # group_idx 0, segment_idx 2
-                # group for문 : original_start 12080, original_end 19500
-                # -> segment for문 : actual_duration 3200, original_duration 7420
-                # --> else: -> 7420 > 3200 -> 980+4800+2240+6500 + 3200
-                # silence_duration 0, current_position 11540+9200=20740, previous_end 20740
-
-
-                # 0.98 ~ 4.58 (3.6) / 7.04 ~ 10.96 (3.92) / 12.08 ~ 19.5 (7.42) -> 만약 Actual_duration 2.8 / 4.5 / 9.2
-                # group_idx 0 , segment_idx 0 
-                # group for문 : original_start 980 / original_end 4580 
-                # -> segment for문 : actual_duration 2800, original_duration 3600, 
-                # --> if segment_idx == 0: -> current_position 980
-                # --> if group_idx, segment_idx == 0: -> original_start != 0: -> result_audio = result_audio(0) + AudioSegment.silent(980) + 2.8초 오디오
-                # silence_duration 0, current_position 2800, previous_end 2800
-
-                # group_idx 0, segment_idx 1
-                # group for문 : original_start 7040, original_end 10960
-                # -> segment for문 : actual_duration 4500, original_duration 3920
-                # --> else: if original_start(7040) > previous_end(2800): silence_duration (7040-2800 -> 4240), result_audio = 980 + 2800 + AudioSegment.silent(4240) + 4.5초 오디오, current_position (2800+4240 -> 7040)
-                # --> else: 3920 > 4500 (X)
-                # silence_duration = 0, current_position 7040+4500 = 11540, previous_end = 11540
-
-                # group_idx 0, segment_idx 2
-                # group for문 : original_start 12080, original_end 19500
-                # -> segment for문 : actual_duration 9200, original_duration 7420
-                # --> else: -> original_start(12080) > previous_end(11540): silence_duration(540), result_audio = 980(s)+2800(a)+4240(s)+4500(a) + AudioSegment.silent(540) + 9200, 
-                # silence_duration 0, current_position 11540+9200=20740, previous_end 20740 
-
 
 # Merge split video files
 def merge_mp4_files(input_dir, output_file):
@@ -629,7 +575,7 @@ def merge_mp4_files(input_dir, output_file):
     for clip in clips:
         clip.close()
 
-def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=False, demucs_endpoint_id=None):
+def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=False, demucs_endpoint_id=None, vast_instance_url="", vast_instance_port=""):
     """
     비디오 더빙 프로세스를 실행합니다.
     
@@ -868,13 +814,19 @@ def handler(event):
         
         # BG 처리 여부 (현재는 사용하지 않지만 나중을 위해 파라미터 저장)
         use_bg_separation = job_input.get("use_bg_separation", True)
+
+        # Vast AI Instance id, Port 추가
+        vast_instance_url = job_input.get("vast_instance_url", "")
+        vast_instance_port = job_input.get("vast_instance_port", "")
         
         # 더빙 프로세스 실행
         result = dubbing_process(
             video_file=video_file,
             target_language=target_language,
             use_gpu_for_demucs=use_gpu_for_demucs,
-            demucs_endpoint_id=demucs_endpoint_id
+            demucs_endpoint_id=demucs_endpoint_id,
+            vast_instance_url=vast_instance_url,
+            vast_instance_port=vast_instance_port
         )
         
         # 입력 파라미터 정보 추가
