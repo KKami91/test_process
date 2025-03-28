@@ -176,14 +176,18 @@ def segment_split_video(origin_video, video_file: str, output_prefix, stt_segmen
     return segments_data
 
 def split_video_to_audio(output_prefix, origin_video):
-    """
-        output_prefix: 저장할 디렉토리
-        나눠진 Video File을 Audio File로 수정
-    """
     video_list = glob.glob(f"./{output_prefix}/*.mp4")
     for i in range(len(video_list)):
-        video = VideoFileClip(video_list[i])
-        video.audio.write_audiofile(os.path.join(output_prefix, origin_video.split(".")[0] + "_" + str(i)) + ".mp3")
+        # 파일 크기가 0인지 확인
+        if os.path.getsize(video_list[i]) == 0:
+            logger.warning(f"Skipping empty video file: {video_list[i]}")
+            continue
+            
+        try:
+            video = VideoFileClip(video_list[i])
+            video.audio.write_audiofile(os.path.join(output_prefix, origin_video.split(".")[0] + "_" + str(i)) + ".mp3")
+        except Exception as e:
+            logger.error(f"Error processing video {video_list[i]}: {str(e)}")
 
 
 def extract_text_by_segments(translation_result: list, segments_list: list):
