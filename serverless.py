@@ -557,16 +557,16 @@ def merge_mp4_files(input_dir, output_file):
     """
     files = [x for x in os.listdir(input_dir) if x.endswith(".mp4")]
 
-    def extract_number(filename):
-        """
-            파일명에서 숫자 추출; convert_{filename}_{number}_{~~~~}.mp4 -> number
-        """
-        match = re.search(r"_(\d+)_", filename)
-        if match:
-            return int(match.group(1))
-        return 0
+    # def extract_number(filename):
+    #     """
+    #         파일명에서 숫자 추출; convert_{filename}_{number}_{~~~~}.mp4 -> number
+    #     """
+    #     match = re.search(r"_(\d+)_", filename)
+    #     if match:
+    #         return int(match.group(1))
+    #     return 0
     
-    files.sort(key=extract_number)
+    # files.sort(key=extract_number)
 
     clips = []
     for file in files:
