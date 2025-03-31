@@ -197,10 +197,13 @@ def extract_text_by_segments(translation_result: list, segments_list: list):
     """
     seg_result = []
     print(f"segments_list : {segments_list}")
+    print(f"translation_result : {translation_result}")
     for segment_range in segments_list:
+        print(f"segment_range : {segment_range}")
         start_time, end_time = segment_range
         segment_texts = []
         for translation in translation_result:
+            print(f"translation : {translation}")
             # segment가 시간 구간과 겹치는지 확인
             if translation["end"] > start_time and translation["start"] < end_time:
                 segment_texts.append({'start': translation['start'], 'end': translation['end'], 'text': translation['text']})
