@@ -796,6 +796,8 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     print(f"os.path.join(output_prefix, 'latentsync', 'final.mp4') : {os.path.join(output_prefix, 'latentsync', 'final.mp4')}")
     print(f"os.path.getsize(os.path.join(output_prefix, 'latentsync', 'final.mp4')) : {os.path.getsize(os.path.join(output_prefix, 'latentsync', 'final.mp4'))}")
     print(f"len(final_video_base64) : {len(final_video_base64)}")
+    test_ = AudioSegment.from_file(os.path.join(output_prefix, 'latentsync', 'final.mp4'))
+    print(f"test_.duration_seconds : {test_.duration_seconds}")
 
     return {
         "video": final_video_base64,
