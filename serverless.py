@@ -196,6 +196,7 @@ def extract_text_by_segments(translation_result: list, segments_list: list):
         segments_list: 나눠진 start, end 리스트
     """
     seg_result = []
+    print(f"segments_list : {segments_list}")
     for segment_range in segments_list:
         start_time, end_time = segment_range
         segment_texts = []
@@ -643,6 +644,7 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     # OpenAI translation
     logger.info(f"{language[target_language]}로 번역 시작")
     translation_result = translate(language[target_language], stt_result["segments"], OPENAI_API_KEY)
+    print(f"translation_result : {translation_result}")
     logger.info("번역 완료")
     
     # Split text 
