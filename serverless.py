@@ -773,6 +773,8 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     merge_mp4_files(INPUT_DIR, OUTPUT_DIR)
     logger.info("최종 비디오 병합 완료")
 
+    # libx265 인코딩
+    logger.info("libx265 인코딩 시작")
     libx265_cmd = [
         "ffmpeg",
         "-i", OUTPUT_DIR,
@@ -784,7 +786,8 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
         OUTPUT_DIR
     ]
     subprocess.run(libx265_cmd)
-    
+    logger.info("libx265 인코딩 완료")
+
     # 최종 비디오 파일이 존재하는지 확인
     if not os.path.exists(OUTPUT_DIR) or os.path.getsize(OUTPUT_DIR) == 0:
         logger.error("최종 비디오 파일이 생성되지 않았거나 크기가 0입니다")
