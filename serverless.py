@@ -507,6 +507,8 @@ def group_combined_segment(divide_text, output_prefix, origin_video):
     silence_duration = 0
     for group_idx, group in enumerate(divide_text):
         result_audio = AudioSegment.silent(duration=0)
+        current_position = 0
+        previous_end = 0
         for segment_idx, segment in enumerate(group):
             original_start = segment['start'] * 1000
             original_end = segment['end'] * 1000
