@@ -768,8 +768,29 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     merge_mp4_files(INPUT_DIR, OUTPUT_DIR)
     logger.info("최종 비디오 병합 완료")
     
+    # 최종 비디오 파일이 존재하는지 확인
+    if not os.path.exists(OUTPUT_DIR) or os.path.getsize(OUTPUT_DIR) == 0:
+        logger.error("최종 비디오 파일이 생성되지 않았거나 크기가 0입니다")
+        return {
+            "error": "최종 비디오 처리에 실패했습니다",
+            "logs": logs
+        }
+    
     # 최종 비디오 파일을 base64로 변환
-    final_video_base64 = file_to_base64(OUTPUT_DIR)
+    try:
+        final_video_base64 = file_to_base64(OUTPUT_DIR)
+        if not final_video_base64:
+            logger.error("비디오 파일을 base64로 변환하는데 실패했습니다")
+            return {
+                "error": "비디오 인코딩에 실패했습니다",
+                "logs": logs
+            }
+    except Exception as e:
+        logger.error(f"비디오 변환 중 오류: {str(e)}")
+        return {
+            "error": f"비디오 변환 오류: {str(e)}",
+            "logs": logs
+        }
     
     return {
         "video": final_video_base64,
