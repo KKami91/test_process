@@ -772,6 +772,18 @@ def dubbing_process(video_file, target_language="en-us", use_gpu_for_demucs=Fals
     OUTPUT_DIR = INPUT_DIR + "/final.mp4"
     merge_mp4_files(INPUT_DIR, OUTPUT_DIR)
     logger.info("최종 비디오 병합 완료")
+
+    libx265_cmd = [
+        "ffmpeg",
+        "-i", OUTPUT_DIR,
+        "-c:v", "libx265",
+        "-crf", "35",
+        "preset", "medium",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        OUTPUT_DIR
+    ]
+    subprocess.run(libx265_cmd)
     
     # 최종 비디오 파일이 존재하는지 확인
     if not os.path.exists(OUTPUT_DIR) or os.path.getsize(OUTPUT_DIR) == 0:
