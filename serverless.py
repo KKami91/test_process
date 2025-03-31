@@ -217,7 +217,7 @@ def extract_text_by_segments(translation_result: list, segments_list: list):
         i = 0
         while i < len(seg):
             current = seg[i]
-            while i + i < len(seg) and (current['end'] == seg[i+1]['start'] or seg[i+1]['start'] - current['end'] <= 0.15):
+            while i + 1 < len(seg) and (current['end'] == seg[i+1]['start'] or seg[i+1]['start'] - current['end'] <= 0.15):
                 next_item = seg[i+1]
                 current['end'] = next_item['end']
                 current['text'] += ' ' + next_item['text']
